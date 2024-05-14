@@ -1,4 +1,4 @@
-console.log("connecting to hydra head at ws://127.0.0.1:4001")
+console.log("connecting to hydra head at ws://127.0.0.1:4001");
 
 // Makeshift hydra client
 
@@ -18,7 +18,6 @@ async function getUTxO() {
   return res.json();
 }
 
-
 // Callbacks from forked doom-wasm
 
 let latestCmd = { forwardMove: 0 };
@@ -28,7 +27,24 @@ async function hydraSend(cmd) {
 
   const utxo = await getUTxO();
   console.log("spendable utxo", utxo);
-  return utxo;
+
+  const txIn = Object.keys(utxo)[0];
+  const [txHash, ixStr] = txIn.split("#");
+  const txOut = utxo[txIn];
+  console.log("selected txOut", txOut);
+  const input = {
+    txHash,
+    outputIndex: Number.parseInt(ixStr),
+    address: txOut.address,
+    assets: txOut.value
+  };
+  console.log("spending from", input);
+  const tx = await Browser.lucid
+    .newTx()
+    .collectFrom([input])
+    .complete({ coinSelection: false });
+  // FIXME: needs a custom provider to resolve UTxO against already known
+  console.log(tx);
 }
 
 function hydraRecv() {
